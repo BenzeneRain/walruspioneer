@@ -9,9 +9,28 @@ import hmac
 import base64
 
 class WalrusPioneerLib:
+    '''
+    This is the Walrus Pioneer library class, which provide interfaces to all
+    kinds of operations to Walrus. 
+    The operations are:
+        ls --- List the contents of specific location, if no location is 
+               spicified, the it will output the resources on the resources
+               under user's root
+        Others are still underconstuction
+    '''
 
     def __init__(self, access_key = "", secret_key = "", \
                  walrus_url = "", verbose_level = 0):
+        '''
+            access_key --- the access key to the eucalyptus, the default value
+                           is retrieved from the environment variable 
+                           $EC2_ACCESS_KEY which can be found in the file eucarc
+            secret_key --- the secret key to the eucalyptus, the default value
+                           is retrieved from the environment variable 
+                           $EC2_SECRET_KEY which can be found in the file eucarc
+            walrus_url --- The Walrus service URL, should be given in full path.
+                           For example, http://localhost:8773/services/Walrus
+        '''
         if cmp(access_key, "") == 0:
             try:
                 self._access_key = os.getenv('EC2_ACCESS_KEY').encode('utf-8')
@@ -42,6 +61,23 @@ class WalrusPioneerLib:
         self._auth_header = ""
         self._verbose_level = verbose_level;
 
+    ######################  Public  ##################################
+    def executecmd(self, cmd, args = None):
+        if cmp(cmd, 'ls') == 0:
+            if self._check_provide_access_info() == False:
+                print "Please provide the ACCESS KEY and SECRET KEY first"
+                return 0
+            else:
+                self._update_time_header()
+                self._update_StringToSign()
+                self._update_Signature()
+                self._update_auth_header()
+                ret = self._send_request()
+                return ret
+        else:
+            pass
+
+    ################### Private #####################################
     def _set_secret_key(self, secret_key):
         self._set_secret_key = secret_key;
 
@@ -58,8 +94,10 @@ class WalrusPioneerLib:
             print data
             print
 
+    ###### Functions below are used to generate the REST header for the request#########
     def _update_time_header(self):
-        self._time_header = datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S +0000')
+        self._time_header = datetime.datetime.utcnow().\
+                            strftime('%a, %d %b %Y %H:%M:%S +0000')
         self._print_verbose_info("####Time Header####",self._time_header)
 
     def _update_StringToSign(self):
@@ -75,6 +113,7 @@ class WalrusPioneerLib:
         self._auth_header = 'AWS ' + self._access_key + ':' + self._Signature
         self._print_verbose_info("####Authority Header####",self._auth_header)
 
+    ##### Function for sending the request #######################
     def _send_request(self):
         theaders = {'User-Agent':'Python-urllib/2.6',\
                     'Accept':'*/*',\
@@ -90,27 +129,21 @@ class WalrusPioneerLib:
 
         return feeddata
 
+    ###### Check if all necessary information has been provided #########
     def _check_provide_access_info(self):
-        if cmp(self._access_key, "") == 0 or cmp(self._secret_key, "") == 0:
+        '''
+        If access key, secret key and walrus service url have been provided
+        then return true, else return false
+        '''
+        if cmp(self._access_key, "") == 0 or\
+           cmp(self._secret_key, "") == 0 or\
+           cmp(self._walrus_url, ""):
             return False
         else:
             return True
 
-    def executecmd(self, cmd, args = None):
-        if cmp(cmd, 'ls') == 0:
-            if self._check_provide_access_info() == False:
-                print "Please provide the ACCESS KEY and SECRET KEY first"
-                return 0
-            else:
-                self._update_time_header()
-                self._update_StringToSign()
-                self._update_Signature()
-                self._update_auth_header()
-                ret = self._send_request()
-                return ret
-        else:
-            pass
 
+################ Self run test #################################33
 if __name__ == "__main__":
     wpl = WalrusPioneerLib(verbose_level = 2);
     ret = wpl.executecmd(cmd = 'ls')
