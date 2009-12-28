@@ -1,12 +1,15 @@
 #!/usr/bin/python
 
-import urllib2
 import os
+
+import urllib2
+import urlparse
+
 import datetime
-import hashlib
-from hashlib import sha1
+
 import hmac
 import base64
+from hashlib import sha1
 
 class WalrusPioneerLib:
     '''
@@ -63,17 +66,30 @@ class WalrusPioneerLib:
 
     ######################  Public  ##################################
     def executecmd(self, cmd, args = None):
+
+        if self._check_provide_access_info() == False:
+            print "Please provide the ACCESS KEY, SECRET KEY and\
+                   Walrus service URL first"
+            return None 
+        
         if cmp(cmd, 'ls') == 0:
-            if self._check_provide_access_info() == False:
-                print "Please provide the ACCESS KEY and SECRET KEY first"
-                return 0
-            else:
-                self._update_time_header()
-                self._update_StringToSign()
-                self._update_Signature()
-                self._update_auth_header()
-                ret = self._send_request()
-                return ret
+            self._update_time_header()
+
+            visit_path = self._walrus_url
+            if visit_path[-1] == '/':
+                visit_path = visit_path[:-2] 
+
+            if args != None:
+                for item in args:
+                    if item[0] != '/':
+                        visit_path += '/'
+                    visit_path += item
+
+            self._update_StringToSign(urlparse.urlparse(visit_path).path)
+            self._update_Signature()
+            self._update_auth_header()
+            ret = self._send_request(visit_path)
+            return ret
         else:
             pass
 
@@ -100,8 +116,8 @@ class WalrusPioneerLib:
                             strftime('%a, %d %b %Y %H:%M:%S +0000')
         self._print_verbose_info("####Time Header####",self._time_header)
 
-    def _update_StringToSign(self):
-        self._StringToSign = 'GET\n\n\n' + self._time_header + '\n' + '/services/Walrus'
+    def _update_StringToSign(self, path):
+        self._StringToSign = 'GET\n\n\n' + self._time_header + '\n' + path 
         self._StringToSign = self._StringToSign.encode('utf-8')
         self._print_verbose_info("####String to Sign####",self._StringToSign)
 
@@ -114,12 +130,12 @@ class WalrusPioneerLib:
         self._print_verbose_info("####Authority Header####",self._auth_header)
 
     ##### Function for sending the request #######################
-    def _send_request(self):
+    def _send_request(self, fullpath):
         theaders = {'User-Agent':'Python-urllib/2.6',\
                     'Accept':'*/*',\
                     'Date':self._time_header,\
                     'Authorization':self._auth_header}
-        request = urllib2.Request(self._walrus_url, headers = theaders)
+        request = urllib2.Request(fullpath, headers = theaders)
         self._print_verbose_info("####Request Header####", request.headers)
 
         opener = urllib2.build_opener()
@@ -137,7 +153,7 @@ class WalrusPioneerLib:
         '''
         if cmp(self._access_key, "") == 0 or\
            cmp(self._secret_key, "") == 0 or\
-           cmp(self._walrus_url, ""):
+           cmp(self._walrus_url, "") == 0:
             return False
         else:
             return True
@@ -146,5 +162,8 @@ class WalrusPioneerLib:
 ################ Self run test #################################33
 if __name__ == "__main__":
     wpl = WalrusPioneerLib(verbose_level = 2);
+    print "Test case 1:\n"
     ret = wpl.executecmd(cmd = 'ls')
+    print "Test case 2:\n"
+    ret = wpl.executecmd(cmd = 'ls', args = ["wayne"])
 
