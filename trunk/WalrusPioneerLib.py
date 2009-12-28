@@ -110,7 +110,7 @@ class WalrusPioneerLib:
             print data
             print
 
-    ###### Functions below are used to generate the REST header for the request#########
+    # Functions below are used to generate the REST header for the request #
     def _update_time_header(self):
         self._time_header = datetime.datetime.utcnow().\
                             strftime('%a, %d %b %Y %H:%M:%S +0000')
@@ -159,7 +159,7 @@ class WalrusPioneerLib:
             return True
 
 
-################ Self run test #################################33
+################ Self run test #################################
 if __name__ == "__main__":
     wpl = WalrusPioneerLib(verbose_level = 2);
     print "Test case 1:\n"
