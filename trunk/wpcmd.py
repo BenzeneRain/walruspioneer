@@ -17,7 +17,7 @@
 #                                                                         #
 #  You should have received a copy of the GNU General Public License      #
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
-########################################################################### 
+###########################################################################
 
 import sys
 import getopt
@@ -67,9 +67,9 @@ class WalrusPioneerCmd:
                 print "Invalid options. Please check help info."
                 WalrusPioneerCmd.print_usage()
                 sys.exit()
-        
+
         arg_len = len(c_args)
-        
+
         if arg_len < 1:
             print "No command found. Please check help info."
             WalrusPioneerCmd.print_usage()
@@ -85,7 +85,7 @@ class WalrusPioneerCmd:
                 print "Invalid command usage. Please check help info."
                 WalrusPioneerCmd.print_usage()
                 sys.exit()
-            wpl = WalrusPioneerLib(verbose_level = verbose_level) 
+            wpl = WalrusPioneerLib(verbose_level = verbose_level)
             ret = 0
             try:
                 if arg_len == 1:
@@ -103,4 +103,4 @@ if __name__ == "__main__":
     if ret != 0:
         print "---------------The result is--------------"
         print ret
-        
+

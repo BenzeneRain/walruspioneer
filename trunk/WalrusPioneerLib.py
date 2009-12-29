@@ -17,7 +17,7 @@
 #                                                                         #
 #  You should have received a copy of the GNU General Public License      #
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
-########################################################################### 
+###########################################################################
 
 import os
 
@@ -33,9 +33,9 @@ from hashlib import sha1
 class WalrusPioneerLib:
     '''
     This is the Walrus Pioneer library class, which provide interfaces to all
-    kinds of operations to Walrus. 
+    kinds of operations to Walrus.
     The operations are:
-        ls --- List the contents of specific location, if no location is 
+        ls --- List the contents of specific location, if no location is
                spicified, the it will output the resources on the resources
                under user's root
         Others are still underconstuction
@@ -45,10 +45,10 @@ class WalrusPioneerLib:
                  walrus_url = "", verbose_level = 0):
         '''
             access_key --- the access key to the eucalyptus, the default value
-                           is retrieved from the environment variable 
+                           is retrieved from the environment variable
                            $EC2_ACCESS_KEY which can be found in the file eucarc
             secret_key --- the secret key to the eucalyptus, the default value
-                           is retrieved from the environment variable 
+                           is retrieved from the environment variable
                            $EC2_SECRET_KEY which can be found in the file eucarc
             walrus_url --- The Walrus service URL, should be given in full path.
                            For example, http://localhost:8773/services/Walrus
@@ -86,17 +86,17 @@ class WalrusPioneerLib:
     ######################  Public  ##################################
     def executecmd(self, cmd, args = None):
 
-        if self._check_provide_access_info() == False:
+        if not self._check_provide_access_info():
             print "Please provide the ACCESS KEY, SECRET KEY and\
                    Walrus service URL first"
-            return None 
-        
+            return
+
         if cmp(cmd, 'ls') == 0:
             self._update_time_header()
 
             visit_path = self._walrus_url
             if visit_path[-1] == '/':
-                visit_path = visit_path[:-2] 
+                visit_path = visit_path[:-2]
 
             if args != None:
                 for item in args:
@@ -109,8 +109,7 @@ class WalrusPioneerLib:
             self._update_auth_header()
             ret = self._send_request(visit_path)
             return ret
-        else:
-            pass
+        # elif ... other commands
 
     ################### Private #####################################
     def _set_secret_key(self, secret_key):
@@ -136,7 +135,7 @@ class WalrusPioneerLib:
         self._print_verbose_info("####Time Header####",self._time_header)
 
     def _update_StringToSign(self, path):
-        self._StringToSign = 'GET\n\n\n' + self._time_header + '\n' + path 
+        self._StringToSign = 'GET\n\n\n' + self._time_header + '\n' + path
         self._StringToSign = self._StringToSign.encode('utf-8')
         self._print_verbose_info("####String to Sign####",self._StringToSign)
 
@@ -170,13 +169,9 @@ class WalrusPioneerLib:
         If access key, secret key and walrus service url have been provided
         then return true, else return false
         '''
-        if cmp(self._access_key, "") == 0 or\
-           cmp(self._secret_key, "") == 0 or\
-           cmp(self._walrus_url, "") == 0:
-            return False
-        else:
-            return True
-
+        return self._access_key \
+            and self._secret_key \
+            and self._walrus_url
 
 ################ Self run test #################################
 if __name__ == "__main__":
