@@ -14,8 +14,25 @@ class WalrusPioneerCmd:
 
     @staticmethod
     def print_usage():
-        print "Usage"
-        pass
+        print "Usage: ./wpcmd.py [OPTIONS...] COMMAND [COMMAND ARGUMENTS]\n"
+        print "  -h, --help       \t\tShow this help"
+        print "  -v, --verbose=NUM\t\tOutput verbose level - 0, 1, and 2. 0 is"
+        print "                   \t\tthe default value, meaning no verbose at"
+        print "                   \t\tat all. 2 indicates giving the most output"
+        print ""
+        print "Commands:"
+        print "  list [COMMAND ARGUMENT]\tThe command receives zero or one argument."
+        print "                         \tit will list the content under the root of"
+        print "                         \tyour account in Walrus system if no argument"
+        print "                         \tfollows. Otherwise the command shows the"
+        print "                         \tcontents in the specific path of your account"
+        print "                         \tin Walrus system"
+        print ""
+        print "Examples:"
+        print " ./wpcmd.py -v 2 list \t\tList the content under the root of your account"
+        print "                      \t\twith most verbose output"
+        print " ./wpcmd.py list /test\t\tList the contents under the bucket with name "
+        print "                      \t\t\"test\" under the root of your account"
 
     def execute_cmd(self, raw_args):
         opts, args = getopt.getopt(raw_args, "v:h", ["verbose=", "help"])
