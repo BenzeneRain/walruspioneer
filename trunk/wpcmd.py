@@ -35,10 +35,10 @@ class WalrusPioneerCmd:
         print "                      \t\t\"test\" under the root of your account"
 
     def execute_cmd(self, raw_args):
-        opts, args = getopt.getopt(raw_args, "v:h", ["verbose=", "help"])
+        c_opts, c_args = getopt.getopt(raw_args, "v:h", ["verbose=", "help"])
 
         verbose_level = 0
-        for opt, val in opts:
+        for opt, val in c_opts:
             if opt in ("-h", "--help"):
                 WalrusPioneerCmd.print_usage()
                 sys.exit()
@@ -49,19 +49,19 @@ class WalrusPioneerCmd:
                 WalrusPioneerCmd.print_usage()
                 sys.exit()
         
-        arg_len = len(args)
+        arg_len = len(c_args)
         
         if arg_len < 1:
             print "No command found. Please check help info."
             WalrusPioneerCmd.print_usage()
             sys.exit()
 
-        if args[0] not in self._command_list:
+        if c_args[0] not in self._command_list:
             print "Invalid command. Please check help info."
             WalrusPioneerCmd.print_usage()
             sys.exit()
 
-        if args[0] == "list":
+        if c_args[0] == "list":
             if arg_len > 2:
                 print "Invalid command usage. Please check help info."
                 WalrusPioneerCmd.print_usage()
@@ -72,7 +72,7 @@ class WalrusPioneerCmd:
                 if arg_len == 1:
                     ret = wpl.executecmd(cmd = 'ls')
                 else:
-                    ret = wpl.executecmd(cmd = 'ls', args = [].append(args[1]))
+                    ret = wpl.executecmd(cmd = 'ls', args = [c_args[1]])
             except:
                 print "Command execution failed"
 
