@@ -85,11 +85,12 @@ class WalrusPioneerCmd:
 
     ######################### Private Methods ################################
     def _analyse_arguments(self, raw_args):
-        c_opts, c_args = getopt.getopt(raw_args, "v:h", ["verbose=",\
-                                                         "help",\
-                                                         "id=",\
-                                                         "secret=",\
-                                                         "url="])
+        try:
+            c_opts, c_args = getopt.getopt(raw_args, "v:h",
+                                           ["verbose=", "help", "id=", "secret=", "url="])
+        except getopt.GetoptError:
+            WalrusPioneerCmd.print_usage()
+            sys.exit(1)
 
         verbose_level = 0
         c_access_key = ""
