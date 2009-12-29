@@ -29,7 +29,8 @@ class WalrusPioneerCmd:
     WalrusPioneer command line tool
     '''
 
-    _command_list = ("list")
+    # here need a comma to make it a real tuple
+    _command_list = ("list",)
 
     ################### Static Method ####################################
     @staticmethod
@@ -70,8 +71,8 @@ class WalrusPioneerCmd:
         raw_args are the args get from the commend line except for the program name.
         you can usually get it use sys.argv[1:]
         '''
-        verbose_level, c_access_key, c_secret_key, c_args, arg_len, c_url =\
-        self._analyse_arguments(raw_args)
+        verbose_level, c_access_key, c_secret_key, c_args, arg_len, c_url = \
+            self._analyse_arguments(raw_args)
 
         wpl = WalrusPioneerLib(verbose_level = verbose_level,\
                                access_key = c_access_key,\
@@ -79,9 +80,13 @@ class WalrusPioneerCmd:
                                walrus_url = c_url)
 
         if c_args[0] == "list":
-            ret = self._execute_list(wpl, c_args, arg_len)
+            return self._execute_list(wpl, c_args, arg_len)
+        # elif ...
+        #   return ...
+        # else
+        #   return ...
 
-        return ret
+        # otherwise it will return None automatically
 
     ######################### Private Methods ################################
     def _analyse_arguments(self, raw_args):
