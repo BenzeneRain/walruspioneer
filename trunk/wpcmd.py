@@ -31,6 +31,7 @@ class WalrusPioneerCmd:
 
     _command_list = ("list")
 
+    ################### Static Method ####################################
     @staticmethod
     def print_usage():
         print "Usage: ./wpcmd.py [OPTIONS...] COMMAND [COMMAND ARGUMENTS]\n"
@@ -44,6 +45,10 @@ class WalrusPioneerCmd:
         print "  --secret=SECRET_KEY\t\tUse the specific key as SECRET_KEY, the "
         print "                     \t\tdefault value is $EC2_SECRET_KEY which is"
         print "                     \t\tset by eucarc file"
+        print "  --url=SERVICE_URL\t\tUse the specific walrus service url address,"
+        print "                   \t\tthe default value is $S3_URL which is set by"
+        print "                   \t\teucarc file. It should be a full address, for"
+        print "                   \t\texample \"http://localhost:8773/services/Walrus\""
         print ""
         print "Commands:"
         print "  list [COMMAND ARGUMENT]\tThe command receives zero or one argument."
@@ -59,13 +64,37 @@ class WalrusPioneerCmd:
         print " ./wpcmd.py list /test\t\tList the contents under the bucket with name "
         print "                      \t\t\"test\" under the root of your account"
 
+    ############### Public Methods #################################################
     def execute_cmd(self, raw_args):
-        c_opts, c_args = getopt.getopt(raw_args, "v:h", ["verbose=", "help",\
-                                                         "id=", "secret="])
+        '''
+        raw_args are the args get from the commend line except for the program name.
+        you can usually get it use sys.argv[1:]
+        '''
+        verbose_level, c_access_key, c_secret_key, c_args, arg_len, c_url =\
+        self._analyse_arguments(raw_args)
+
+        wpl = WalrusPioneerLib(verbose_level = verbose_level,\
+                               access_key = c_access_key,\
+                               secret_key = c_secret_key,\
+                               walrus_url = c_url)
+
+        if c_args[0] == "list":
+            ret = self._execute_list(wpl, c_args, arg_len)
+
+        return ret
+
+    ######################### Private Methods ################################
+    def _analyse_arguments(self, raw_args):
+        c_opts, c_args = getopt.getopt(raw_args, "v:h", ["verbose=",\
+                                                         "help",\
+                                                         "id=",\
+                                                         "secret=",\
+                                                         "url="])
 
         verbose_level = 0
         c_access_key = ""
         c_secret_key = ""
+        c_url = ""
         for opt, val in c_opts:
             if opt in ("-h", "--help"):
                 WalrusPioneerCmd.print_usage()
@@ -76,6 +105,8 @@ class WalrusPioneerCmd:
                 c_access_key = val
             elif opt in ("--secret"):
                 c_secret_key = val
+            elif opt in ("--url"):
+                c_url = val
             else:
                 print "Invalid options. Please check help info."
                 WalrusPioneerCmd.print_usage()
@@ -93,24 +124,30 @@ class WalrusPioneerCmd:
             WalrusPioneerCmd.print_usage()
             sys.exit()
 
-        if c_args[0] == "list":
-            if arg_len > 2:
-                print "Invalid command usage. Please check help info."
-                WalrusPioneerCmd.print_usage()
-                sys.exit()
-            wpl = WalrusPioneerLib(verbose_level = verbose_level,\
-                                   access_key = c_access_key,\
-                                   secret_key = c_secret_key)
-            ret = 0
-            try:
-                if arg_len == 1:
-                    ret = wpl.executecmd(cmd = 'ls')
-                else:
-                    ret = wpl.executecmd(cmd = 'ls', args = [c_args[1]])
-            except:
-                print "Command execution failed"
+        return [verbose_level,\
+                c_access_key,\
+                c_secret_key,\
+                c_args,\
+                arg_len,\
+                c_url]
+
+    ################# Command execution preprocessing subroutings ###############
+    def _execute_list(self, wpl, args, arg_len):
+        if arg_len > 2:
+            print "Invalid command usage. Please check help info."
+            WalrusPioneerCmd.print_usage()
+            sys.exit()
+        ret = 0
+        try:
+            if arg_len == 1:
+                ret = wpl.executecmd(cmd = 'ls')
+            else:
+                ret = wpl.executecmd(cmd = 'ls', args = [args[1]])
+        except:
+            print "Command execution failed"
 
         return ret
+
 
 if __name__ == "__main__":
     wpc = WalrusPioneerCmd()
