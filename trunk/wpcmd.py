@@ -38,6 +38,12 @@ class WalrusPioneerCmd:
         print "  -v, --verbose=NUM\t\tOutput verbose level - 0, 1, and 2. 0 is"
         print "                   \t\tthe default value, meaning no verbose at"
         print "                   \t\tat all. 2 indicates giving the most output"
+        print "  --id=ACCESS_KEY  \t\tUse the specific key as ACCESS_KEY, the"
+        print "                   \t\tdefault value is $EC2_ACCESS_KEY which is"
+        print "                   \t\tset by eucarc file"
+        print "  --secret=SECRET_KEY\t\tUse the specific key as SECRET_KEY, the "
+        print "                     \t\tdefault value is $EC2_SECRET_KEY which is"
+        print "                     \t\tset by eucarc file"
         print ""
         print "Commands:"
         print "  list [COMMAND ARGUMENT]\tThe command receives zero or one argument."
@@ -54,15 +60,22 @@ class WalrusPioneerCmd:
         print "                      \t\t\"test\" under the root of your account"
 
     def execute_cmd(self, raw_args):
-        c_opts, c_args = getopt.getopt(raw_args, "v:h", ["verbose=", "help"])
+        c_opts, c_args = getopt.getopt(raw_args, "v:h", ["verbose=", "help",\
+                                                         "id=", "secret="])
 
         verbose_level = 0
+        c_access_key = ""
+        c_secret_key = ""
         for opt, val in c_opts:
             if opt in ("-h", "--help"):
                 WalrusPioneerCmd.print_usage()
                 sys.exit()
             elif opt in ("-v", "--verbose"):
                 verbose_level = int(val)
+            elif opt in ("--id"):
+                c_access_key = val
+            elif opt in ("--secret"):
+                c_secret_key = val
             else:
                 print "Invalid options. Please check help info."
                 WalrusPioneerCmd.print_usage()
@@ -85,7 +98,9 @@ class WalrusPioneerCmd:
                 print "Invalid command usage. Please check help info."
                 WalrusPioneerCmd.print_usage()
                 sys.exit()
-            wpl = WalrusPioneerLib(verbose_level = verbose_level)
+            wpl = WalrusPioneerLib(verbose_level = verbose_level,\
+                                   access_key = c_access_key,\
+                                   secret_key = c_secret_key)
             ret = 0
             try:
                 if arg_len == 1:
