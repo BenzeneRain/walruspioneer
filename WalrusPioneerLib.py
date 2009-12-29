@@ -3,7 +3,7 @@
 ###########################################################################
 #  Walrus Pioneer, provide easy access to the Walrus service of Eucalyptus#
 #  project.                                                               #
-#  Copyright (C) 2009, Wen ZHANG                                          #
+#  Copyright (C) 2009, Walrus Pioneer Project Group                       #
 #                                                                         #
 #  This program is free software: you can redistribute it and/or modify   #
 #  it under the terms of the GNU General Public License as published by   #
