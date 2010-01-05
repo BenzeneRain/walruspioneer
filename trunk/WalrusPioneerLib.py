@@ -40,7 +40,8 @@ class WalrusPioneerLib:
         list --- List the contents of specific location, if no location is
                  spicified, the it will output the resources on the resources
                  under user's root
-        mkbkt --- Make a bucket with specific name
+        mkbkt --- Make a bucket with the specific name
+        rmbkt --- Remove a bucket with the specific name
         Others are still underconstuction
     '''
 
@@ -94,6 +95,8 @@ class WalrusPioneerLib:
             return self._execute_cmd_list(args)
         elif cmd == 'mkbkt':
             return self._execute_cmd_mkbkt(args)
+        elif cmd == 'rmbkt':
+            return self._execute_cmd_rmbkt(args)
         # elif ... other commands
 
     ################### Private #####################################
@@ -150,6 +153,28 @@ class WalrusPioneerLib:
                                   fullpath = visit_path,     \
                                   headers  = packet_headers)
         
+    def _execute_cmd_rmbkt(self, args):
+        if len(args) != 1:
+            print "Invalid argument for rmbkt command!"
+            return None
+
+        visit_path = self._walrus_url
+        if visit_path[-1] == '/':
+            visit_path = visit_path[:-2]
+
+        for item in args:
+            if item[0] != '/':
+                visit_path += '/'
+            visit_path += item
+
+        packet = DataPacket_rmbkt(self._verbose_level)
+        packet_headers = packet.generate_header(self._access_key,\
+                                                self._secret_key,\
+                                                urlparse.urlparse(visit_path).path)
+    
+        return self._send_request(method   = "DELETE",       \
+                                  fullpath = visit_path,     \
+                                  headers  = packet_headers)
 
 
 
@@ -233,8 +258,8 @@ class DataPacket:
                        CanonicalizedResources
 
         stringtosign = stringtosign.encode('utf-8')
-        WalrusPioneerDebug.print_verbose("####String to Sign####",\
-                                         stringtosign,            \
+        WalrusPioneerDebug.print_verbose("####String to Sign####",          \
+                                         stringtosign.replace('\n', r'\n'), \
                                          self._verbose_level)
         return stringtosign
 
@@ -339,6 +364,30 @@ class DataPacket_mkbkt(DataPacket):
                                    )
         return headers
 
+class DataPacket_rmbkt(DataPacket):
+
+    #################### Public Methods ##########################
+
+    def generate_header(self                        ,\
+                        access_key              = "",\
+                        secret_key              = "",\
+                        CanonicalizedResources  = ""):
+
+        headers = {}
+        headers['User-Agent'] = r"Python-urllib/2.6"
+        headers['Accept'] = r"*/*"
+        headers['Date'] = self._get_time_header()
+        headers['Authorization'] = self._get_authorization_header    \
+                                   (                                 \
+                                      access_key = access_key,       \
+                                      secret_key = secret_key,       \
+                                      HTTP_Verb  = 'DELETE',         \
+                                      date       = headers['Date'],  \
+                                      CanonicalizedResources =       \
+                                      CanonicalizedResources         \
+                                   )
+        return headers
+
 ##################### Class WalrusPioneerDebug #######################
 class WalrusPioneerDebug:
 
@@ -347,10 +396,7 @@ class WalrusPioneerDebug:
         if verbose_level >= 2:
             print description
         if verbose_level >= 1:
-            if type(data) == str:
-                print data.replace('\n', r'\n')
-            else:
-                print data
+            print data
             print 
 
 
@@ -360,7 +406,11 @@ if __name__ == "__main__":
     print "Test case 1:\n"
     ret = wpl.executecmd(cmd = 'list')
     print "Test case 2:\n"
-    ret = wpl.executecmd(cmd = 'list', args = ["wayne"])
+    ret = wpl.executecmd(cmd = 'mkbkt', args = ["test"])
     print "Test case 3:\n"
-    ret = wpl.executecmd(cmd = 'mkbkt', args = ["wayne1"])
+    ret = wpl.executecmd(cmd = 'list', args = ["test"])
+    print "Test case 4:\n"
+    ret = wpl.executecmd(cmd = 'rmbkt', args = ["test"])
+    print "Test case 5:\n"
+    ret = wpl.executecmd(cmd = 'list')
 

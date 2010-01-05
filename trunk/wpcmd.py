@@ -30,7 +30,7 @@ class WalrusPioneerCmd:
     '''
 
     # here need a comma to make it a real tuple
-    _command_list = ("list","mkbkt",)
+    _command_list = ("list","mkbkt","rmbkt",)
 
     ################### Static Method ####################################
     @staticmethod
@@ -61,6 +61,9 @@ class WalrusPioneerCmd:
         print "  mkbkt <BucketName>     \tThe command receives one argument."
         print "                         \tIt will create the bucket with specific"
         print "                         \tbucket name"
+        print "  rmbkt <BucketName>     \tThe command receives one argument."
+        print "                         \tIt will delete the bucket with specific"
+        print "                         \tbucket name"
         print ""
         print "Examples:"
         print " ./wpcmd.py -v 2 list \t\tList the content under the root of your account"
@@ -86,6 +89,8 @@ class WalrusPioneerCmd:
             return self._execute_list(wpl, c_args, arg_len)
         elif c_args[0] == "mkbkt":
             return self._execute_mkbkt(wpl, c_args, arg_len)
+        elif c_args[0] == "rmbkt":
+            return self._execute_rmbkt(wpl, c_args, arg_len)
         # elif ...
         #   return ...
         # else
@@ -167,6 +172,19 @@ class WalrusPioneerCmd:
         ret = 0
         try:
             ret = wpl.executecmd(cmd = 'mkbkt', args = [args[1]])
+        except:
+            print "Command execution failed"
+
+        return ret
+
+    def _execute_rmbkt(self, wpl, args, arg_len):
+        if arg_len != 2:
+            print "Invalid command usage. Please check help info."
+            WalrusPioneerCmd.print_usage()
+            sys.exit()
+        ret = 0
+        try:
+            ret = wpl.executecmd(cmd = 'rmbkt', args = [args[1]])
         except:
             print "Command execution failed"
 
