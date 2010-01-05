@@ -146,9 +146,9 @@ class WalrusPioneerCmd:
         ret = 0
         try:
             if arg_len == 1:
-                ret = wpl.executecmd(cmd = 'ls')
+                ret = wpl.executecmd(cmd = 'list')
             else:
-                ret = wpl.executecmd(cmd = 'ls', args = [args[1]])
+                ret = wpl.executecmd(cmd = 'list', args = [args[1]])
         except:
             print "Command execution failed"
 
