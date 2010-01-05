@@ -21,7 +21,8 @@
 
 import os
 
-import urllib2
+#import urllib2
+import httplib
 import urlparse
 
 import datetime
@@ -30,6 +31,7 @@ import hmac
 import base64
 from hashlib import sha1
 
+####################### Class WalrusPioneerLib ###############################
 class WalrusPioneerLib:
     '''
     This is the Walrus Pioneer library class, which provide interfaces to all
@@ -77,10 +79,6 @@ class WalrusPioneerLib:
         else:
             self._walrus_url = walrus_url
 
-        self._time_header = ""
-        self._StringToSing = ""
-        self._Signature = ""
-        self._auth_header = ""
         self._verbose_level = verbose_level;
 
     ######################  Public  ##################################
@@ -91,24 +89,8 @@ class WalrusPioneerLib:
                    Walrus service URL first"
             return
 
-        if cmp(cmd, 'ls') == 0:
-            self._update_time_header()
-
-            visit_path = self._walrus_url
-            if visit_path[-1] == '/':
-                visit_path = visit_path[:-2]
-
-            if args != None:
-                for item in args:
-                    if item[0] != '/':
-                        visit_path += '/'
-                    visit_path += item
-
-            self._update_StringToSign(urlparse.urlparse(visit_path).path)
-            self._update_Signature()
-            self._update_auth_header()
-            ret = self._send_request(visit_path)
-            return ret
+        if cmp(cmd, 'list') == 0:
+            return self._execute_cmd_list(args)
         # elif ... other commands
 
     ################### Private #####################################
@@ -121,45 +103,64 @@ class WalrusPioneerLib:
     def _set_walrus_url(self, walrus_url):
         self._walrus_url = walrus_url;
 
-    def _print_verbose_info(self, header, data):
-        if self._verbose_level >= 2:
-            print header
-        if self._verbose_level >= 1:
-            print data
-            print
 
-    # Functions below are used to generate the REST header for the request #
-    def _update_time_header(self):
-        self._time_header = datetime.datetime.utcnow().\
-                            strftime('%a, %d %b %Y %H:%M:%S +0000')
-        self._print_verbose_info("####Time Header####",self._time_header)
+    def _execute_cmd_list(self, args):
+        visit_path = self._walrus_url
+        if visit_path[-1] == '/':
+            visit_path = visit_path[:-2]
 
-    def _update_StringToSign(self, path):
-        self._StringToSign = 'GET\n\n\n' + self._time_header + '\n' + path
-        self._StringToSign = self._StringToSign.encode('utf-8')
-        self._print_verbose_info("####String to Sign####",self._StringToSign)
+        if args != None:
+            for item in args:
+                if item[0] != '/':
+                    visit_path += '/'
+                visit_path += item
 
-    def _update_Signature(self):
-        hmac_sha1 = hmac.new(self._secret_key, self._StringToSign, sha1)
-        self._Signature = base64.b64encode(hmac_sha1.digest())
+        packet = DataPacket_list(self._verbose_level)
+        packet_headers = packet.generate_header(self._access_key,\
+                                                self._secret_key,\
+                                                urlparse.urlparse(visit_path).path)
+    
+        return self._send_request(method = "GET",            \
+                                  fullpath = visit_path,     \
+                                  headers  = packet_headers)
 
-    def _update_auth_header(self):
-        self._auth_header = 'AWS ' + self._access_key + ':' + self._Signature
-        self._print_verbose_info("####Authority Header####",self._auth_header)
+
 
     ##### Function for sending the request #######################
-    def _send_request(self, fullpath):
-        theaders = {'User-Agent':'Python-urllib/2.6',\
-                    'Accept':'*/*',\
-                    'Date':self._time_header,\
-                    'Authorization':self._auth_header}
-        request = urllib2.Request(fullpath, headers = theaders)
-        self._print_verbose_info("####Request Header####", request.headers)
+    def _send_request(self, method = "", fullpath = "", headers = {}, contents = None):
 
-        opener = urllib2.build_opener()
-        feeddata = opener.open(request).read()
+        WalrusPioneerDebug.print_verbose("####Request Method ####", \
+                                         method,                    \
+                                         self._verbose_level)
+        
+        WalrusPioneerDebug.print_verbose("####Request Header####", \
+                                         headers,                  \
+                                         self._verbose_level)
 
-        self._print_verbose_info("####Feed back data####", feeddata)
+        WalrusPioneerDebug.print_verbose("####Request Content####", \
+                                         contents,                  \
+                                         self._verbose_level)
+
+        urldetails = urlparse.urlparse(fullpath)
+        conn = httplib.HTTPConnection(urldetails.netloc)
+        conn.set_debuglevel(self._verbose_level)
+        conn.putrequest(method,         \
+                        urldetails.path,\
+                        skip_accept_encoding = True)
+        for header in headers:
+            conn.putheader(header, headers[header])
+
+        conn.endheaders()
+        
+        if contents != None:
+            conn.send(contents)
+
+        response = conn.getresponse()
+        feeddata = response.read()
+
+        WalrusPioneerDebug.print_verbose("####Feed back data####", \
+                                         feeddata,                 \
+                                         self._verbose_level)
 
         return feeddata
 
@@ -169,15 +170,144 @@ class WalrusPioneerLib:
         If access key, secret key and walrus service url have been provided
         then return true, else return false
         '''
-        return self._access_key \
+        return self._access_key  \
             and self._secret_key \
             and self._walrus_url
+
+####################### Class DataPacket  ###############################
+class DataPacket:
+    def __init__(self, verbose_level):
+        self._verbose_level = verbose_level
+
+    #################### Private Methods ##########################
+
+    def _get_time_header(self):
+        time_header = datetime.datetime.utcnow().\
+                            strftime('%a, %d %b %Y %H:%M:%S +0000')
+
+        WalrusPioneerDebug.print_verbose("####Time Header####",\
+                                         time_header,          \
+                                         self._verbose_level)
+        return time_header
+
+    def _get_stringtosign(self                        ,\
+                          HTTP_Verb               = "",\
+                          Content_MD5             = "",\
+                          Content_type            = "",\
+                          date                    = "",\
+                          CanonicalizedAmzHeaders = "",\
+                          CanonicalizedResources  = ""):
+
+        stringtosign = HTTP_Verb               + '\n' +\
+                       Content_MD5             + '\n' +\
+                       Content_type            + '\n' +\
+                       date                    + '\n' +\
+                       CanonicalizedAmzHeaders +       \
+                       CanonicalizedResources
+
+        stringtosign = stringtosign.encode('utf-8')
+        WalrusPioneerDebug.print_verbose("####String to Sign####",\
+                                         stringtosign,            \
+                                         self._verbose_level)
+        return stringtosign
+
+    def _get_signature(self                        ,\
+                       secret_key              = "",\
+                       HTTP_Verb               = "",\
+                       Content_MD5             = "",\
+                       Content_type            = "",\
+                       date                    = "",\
+                       CanonicalizedAmzHeaders = "",\
+                       CanonicalizedResources  = ""):
+
+        hmac_sha1 = hmac.new(secret_key,                \
+                             self._get_stringtosign     \
+                             (                          \
+                                HTTP_Verb,              \
+                                Content_MD5,            \
+                                Content_type,           \
+                                date,                   \
+                                CanonicalizedAmzHeaders,\
+                                CanonicalizedResources  \
+                             ),                         \
+                             sha1)
+
+        return base64.b64encode(hmac_sha1.digest())
+
+
+    def _get_authorization_header(self                        ,\
+                                  access_key              = "",\
+                                  secret_key              = "",\
+                                  HTTP_Verb               = "",\
+                                  Content_MD5             = "",\
+                                  Content_type            = "",\
+                                  date                    = "",\
+                                  CanonicalizedAmzHeaders = "",\
+                                  CanonicalizedResources  = ""):
+
+        auth_header = ""
+        auth_header = 'AWS ' + access_key + ':' +\
+                      self._get_signature        \
+                      (                          \
+                         secret_key,             \
+                         HTTP_Verb,              \
+                         Content_MD5,            \
+                         Content_type,           \
+                         date,                   \
+                         CanonicalizedAmzHeaders,\
+                         CanonicalizedResources  \
+                      )                          \
+
+        WalrusPioneerDebug.print_verbose("####Authority Header####",\
+                                         auth_header,               \
+                                         self._verbose_level)
+        return auth_header
+
+##################### Class DataPacket_list ##########################
+class DataPacket_list(DataPacket):
+
+    #################### Public Methods ##########################
+
+    def generate_header(self                        ,\
+                        access_key              = "",\
+                        secret_key              = "",\
+                        CanonicalizedResources  = ""):
+
+        headers = {}
+        headers['User-Agent'] = r"Python-urllib/2.6"
+        headers['Accept'] = r"*/*"
+        headers['Date'] = self._get_time_header()
+        headers['Authorization'] = self._get_authorization_header    \
+                                   (                                 \
+                                      access_key = access_key,       \
+                                      secret_key = secret_key,       \
+                                      HTTP_Verb  = 'GET',            \
+                                      date       = headers['Date'],  \
+                                      CanonicalizedResources =       \
+                                      CanonicalizedResources         \
+                                   )
+        return headers
+
+##################### Class WalrusPioneerDebug #######################
+class WalrusPioneerDebug:
+
+    @staticmethod
+    def print_verbose(description, data, verbose_level):
+        if verbose_level >= 2:
+            print description
+        if verbose_level >= 1:
+            if type(data) == str:
+                print data.replace('\n', r'\n')
+            else:
+                print data
+            print 
+
 
 ################ Self run test #################################
 if __name__ == "__main__":
     wpl = WalrusPioneerLib(verbose_level = 2);
     print "Test case 1:\n"
-    ret = wpl.executecmd(cmd = 'ls')
+    ret = wpl.executecmd(cmd = 'list')
     print "Test case 2:\n"
-    ret = wpl.executecmd(cmd = 'ls', args = ["wayne"])
+    ret = wpl.executecmd(cmd = 'list', args = ["wayne"])
 
