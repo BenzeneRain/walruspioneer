@@ -37,9 +37,10 @@ class WalrusPioneerLib:
     This is the Walrus Pioneer library class, which provide interfaces to all
     kinds of operations to Walrus.
     The operations are:
-        ls --- List the contents of specific location, if no location is
-               spicified, the it will output the resources on the resources
-               under user's root
+        list --- List the contents of specific location, if no location is
+                 spicified, the it will output the resources on the resources
+                 under user's root
+        mkbkt --- Make a bucket with specific name
         Others are still underconstuction
     '''
 
@@ -89,8 +90,10 @@ class WalrusPioneerLib:
                    Walrus service URL first"
             return
 
-        if cmp(cmd, 'list') == 0:
+        if cmd == 'list':
             return self._execute_cmd_list(args)
+        elif cmd == 'mkbkt':
+            return self._execute_cmd_mkbkt(args)
         # elif ... other commands
 
     ################### Private #####################################
@@ -120,9 +123,33 @@ class WalrusPioneerLib:
                                                 self._secret_key,\
                                                 urlparse.urlparse(visit_path).path)
     
-        return self._send_request(method = "GET",            \
+        return self._send_request(method   = "GET",          \
                                   fullpath = visit_path,     \
                                   headers  = packet_headers)
+
+    def _execute_cmd_mkbkt(self, args):
+        if len(args) != 1:
+            print "Invalid argument for mkbkt command!"
+            return None
+
+        visit_path = self._walrus_url
+        if visit_path[-1] == '/':
+            visit_path = visit_path[:-2]
+
+        for item in args:
+            if item[0] != '/':
+                visit_path += '/'
+            visit_path += item
+
+        packet = DataPacket_mkbkt(self._verbose_level)
+        packet_headers = packet.generate_header(self._access_key,\
+                                                self._secret_key,\
+                                                urlparse.urlparse(visit_path).path)
+    
+        return self._send_request(method   = "PUT",          \
+                                  fullpath = visit_path,     \
+                                  headers  = packet_headers)
+        
 
 
 
@@ -288,6 +315,30 @@ class DataPacket_list(DataPacket):
                                    )
         return headers
 
+class DataPacket_mkbkt(DataPacket):
+
+    #################### Public Methods ##########################
+
+    def generate_header(self                        ,\
+                        access_key              = "",\
+                        secret_key              = "",\
+                        CanonicalizedResources  = ""):
+
+        headers = {}
+        headers['User-Agent'] = r"Python-urllib/2.6"
+        headers['Accept'] = r"*/*"
+        headers['Date'] = self._get_time_header()
+        headers['Authorization'] = self._get_authorization_header    \
+                                   (                                 \
+                                      access_key = access_key,       \
+                                      secret_key = secret_key,       \
+                                      HTTP_Verb  = 'PUT',            \
+                                      date       = headers['Date'],  \
+                                      CanonicalizedResources =       \
+                                      CanonicalizedResources         \
+                                   )
+        return headers
+
 ##################### Class WalrusPioneerDebug #######################
 class WalrusPioneerDebug:
 
@@ -310,4 +361,6 @@ if __name__ == "__main__":
     ret = wpl.executecmd(cmd = 'list')
     print "Test case 2:\n"
     ret = wpl.executecmd(cmd = 'list', args = ["wayne"])
+    print "Test case 3:\n"
+    ret = wpl.executecmd(cmd = 'mkbkt', args = ["wayne1"])
 

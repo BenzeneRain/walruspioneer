@@ -30,7 +30,7 @@ class WalrusPioneerCmd:
     '''
 
     # here need a comma to make it a real tuple
-    _command_list = ("list",)
+    _command_list = ("list","mkbkt",)
 
     ################### Static Method ####################################
     @staticmethod
@@ -58,6 +58,9 @@ class WalrusPioneerCmd:
         print "                         \tfollows. Otherwise the command shows the"
         print "                         \tcontents in the specific path of your account"
         print "                         \tin Walrus system"
+        print "  mkbkt <BucketName>     \tThe command receives one argument."
+        print "                         \tIt will create the bucket with specific"
+        print "                         \tbucket name"
         print ""
         print "Examples:"
         print " ./wpcmd.py -v 2 list \t\tList the content under the root of your account"
@@ -81,6 +84,8 @@ class WalrusPioneerCmd:
 
         if c_args[0] == "list":
             return self._execute_list(wpl, c_args, arg_len)
+        elif c_args[0] == "mkbkt":
+            return self._execute_mkbkt(wpl, c_args, arg_len)
         # elif ...
         #   return ...
         # else
@@ -149,6 +154,19 @@ class WalrusPioneerCmd:
                 ret = wpl.executecmd(cmd = 'list')
             else:
                 ret = wpl.executecmd(cmd = 'list', args = [args[1]])
+        except:
+            print "Command execution failed"
+
+        return ret
+
+    def _execute_mkbkt(self, wpl, args, arg_len):
+        if arg_len != 2:
+            print "Invalid command usage. Please check help info."
+            WalrusPioneerCmd.print_usage()
+            sys.exit()
+        ret = 0
+        try:
+            ret = wpl.executecmd(cmd = 'mkbkt', args = [args[1]])
         except:
             print "Command execution failed"
 
