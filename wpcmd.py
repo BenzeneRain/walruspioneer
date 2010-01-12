@@ -30,7 +30,7 @@ class WalrusPioneerCmd:
     '''
 
     # here need a comma to make it a real tuple
-    _command_list = ("list","mkbkt","rmbkt","queryacl","putobj",)
+    _command_list = ("list","mkbkt","rmbkt","queryacl","putobj","delobj",)
 
     ################### Static Method ####################################
     @staticmethod
@@ -74,6 +74,9 @@ class WalrusPioneerCmd:
         print "                         \tremote server. If dst is a bucket name  "
         print "                         \tending with a /, then the name of uploaded"
         print "                         \twill keep the same as the original one."
+        print "  delobj <ResourceName>  \tThe command receives one argument."
+        print "                         \tIt will delete the object with specific"
+        print "                         \tpath and object name"
         print ""
         print "Examples:"
         print " ./wpcmd.py -v 2 list \t\tList the content under the root of your account"
@@ -105,6 +108,8 @@ class WalrusPioneerCmd:
             return self._execute_queryacl(wpl, c_args, arg_len)
         elif c_args[0] == "putobj":
             return self._execute_putobj(wpl, c_args, arg_len)
+        elif c_args[0] == "delobj":
+            return self._execute_delobj(wpl, c_args, arg_len)
         # elif ...
         #   return ...
         # else
@@ -225,6 +230,19 @@ class WalrusPioneerCmd:
         ret = 0
         try:
             ret = wpl.executecmd(cmd = 'putobj', args = args[1:])
+        except:
+            print "Command execution failed"
+
+        return ret
+
+    def _execute_delobj(self, wpl, args, arg_len):
+        if arg_len != 2:
+            print "Invalid command usage. Please check help info."
+            WalrusPioneerCmd.print_usage()
+            sys.exit()
+        ret = 0
+        try:
+            ret = wpl.executecmd(cmd = 'delobj', args = [args[1]])
         except:
             print "Command execution failed"
 
