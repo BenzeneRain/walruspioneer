@@ -30,7 +30,7 @@ class WalrusPioneerCmd:
     '''
 
     # here need a comma to make it a real tuple
-    _command_list = ("list","mkbkt","rmbkt","queryacl","putobj","delobj",)
+    _command_list = ("list","mkbkt","rmbkt","queryacl","putobj","delobj","getobj",)
 
     ################### Static Method ####################################
     @staticmethod
@@ -70,10 +70,19 @@ class WalrusPioneerCmd:
         print "  putobj <src> <dst>     \tThe command receives two arguments."
         print "                         \tIt will upload the file specified by src"
         print "                         \tto the destination notified by dst. Note"
-        print "                         \tthat use need to specify the name in the"
+        print "                         \tthat user needs to specify the name in the"
         print "                         \tremote server. If dst is a bucket name  "
-        print "                         \tending with a /, then the name of uploaded"
-        print "                         \twill keep the same as the original one."
+        print "                         \tending with a /, then the name of upload"
+        print "                         \tfile will keep the same as the original one."
+        print "  getobj <src> [dst]     \tThe command receives two arguments."
+        print "                         \tIt will download the file specified by src"
+        print "                         \tto the destination notified by dst. Note"
+        print "                         \tthat user needs to specify the name in the"
+        print "                         \tremote server. If dst is a directory name  "
+        print "                         \tending with a /, then the name of download"
+        print "                         \tfile will keep the same as the original one."
+        print "                         \tIf no dst provided, the default value is the"
+        print "                         \tcurrent working directory"
         print "  delobj <ResourceName>  \tThe command receives one argument."
         print "                         \tIt will delete the object with specific"
         print "                         \tpath and object name"
@@ -108,6 +117,8 @@ class WalrusPioneerCmd:
             return self._execute_queryacl(wpl, c_args, arg_len)
         elif c_args[0] == "putobj":
             return self._execute_putobj(wpl, c_args, arg_len)
+        elif c_args[0] == "getobj":
+            return self._execute_getobj(wpl, c_args, arg_len)
         elif c_args[0] == "delobj":
             return self._execute_delobj(wpl, c_args, arg_len)
         # elif ...
@@ -230,6 +241,19 @@ class WalrusPioneerCmd:
         ret = 0
         try:
             ret = wpl.executecmd(cmd = 'putobj', args = args[1:])
+        except:
+            print "Command execution failed"
+
+        return ret
+
+    def _execute_getobj(self, wpl, args, arg_len):
+        if arg_len < 1:
+            print "Invalid command usage. Please check help info."
+            WalrusPioneerCmd.print_usage()
+            sys.exit()
+        ret = 0
+        try:
+            ret = wpl.executecmd(cmd = 'getobj', args = args[1:])
         except:
             print "Command execution failed"
 

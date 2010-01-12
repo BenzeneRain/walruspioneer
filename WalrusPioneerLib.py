@@ -45,6 +45,7 @@ class WalrusPioneerLib:
         rmbkt --- Remove a bucket with the specific name
         queryacl --- Query the access control list of a bucket or an object 
         putobj --- put an object to the walrus
+        getobj --- get an object to the localhost from walrus
         delobj --- delete an existed object in the walrus
         Others are still underconstuction
     '''
@@ -105,6 +106,8 @@ class WalrusPioneerLib:
             return self._execute_cmd_queryacl(args)
         elif cmd == 'putobj':
             return self._execute_cmd_putobj(args)
+        elif cmd == 'getobj':
+            return self._execute_cmd_getobj(args)
         elif cmd == 'delobj':
             return self._execute_cmd_delobj(args)
         # elif ... other commands
@@ -136,9 +139,10 @@ class WalrusPioneerLib:
                                                 self._secret_key,\
                                                 urlparse.urlparse(visit_path).path)
     
-        return self._send_request(method   = "GET",          \
+        response = self._send_request(method   = "GET",          \
                                   fullpath = visit_path,     \
                                   headers  = packet_headers)
+        return response.read()
 
     def _execute_cmd_mkbkt(self, args):
         if len(args) != 1:
@@ -159,9 +163,11 @@ class WalrusPioneerLib:
                                                 self._secret_key,\
                                                 urlparse.urlparse(visit_path).path)
     
-        return self._send_request(method   = "PUT",          \
+        response =  self._send_request(method   = "PUT",          \
                                   fullpath = visit_path,     \
                                   headers  = packet_headers)
+
+        return response.read()
         
     def _execute_cmd_rmbkt(self, args):
         if len(args) != 1:
@@ -182,9 +188,10 @@ class WalrusPioneerLib:
                                                 self._secret_key,\
                                                 urlparse.urlparse(visit_path).path)
     
-        return self._send_request(method   = "DELETE",       \
+        response =  self._send_request(method   = "DELETE",       \
                                   fullpath = visit_path,     \
                                   headers  = packet_headers)
+        return response.read()
 
     def _execute_cmd_queryacl(self, args):
         visit_path = self._walrus_url
@@ -203,9 +210,11 @@ class WalrusPioneerLib:
                                                 urlparse.urlparse(visit_path).path\
                                                 + "?acl")
     
-        return self._send_request(method   = "GET",          \
+        response =  self._send_request(method   = "GET",          \
                                   fullpath = visit_path + "?acl",     \
                                   headers  = packet_headers)
+
+        return response.read()
 
     def _execute_cmd_putobj(self, args):
         visit_path = self._walrus_url
@@ -233,10 +242,63 @@ class WalrusPioneerLib:
                                                 self._secret_key,\
                                                 urlparse.urlparse(visit_path).path)
     
-        return self._send_request(method   = "PUT",          \
+        response = self._send_request(method   = "PUT",          \
                                   fullpath = visit_path,     \
                                   headers  = packet_headers, \
                                   contents = packet_content)
+
+        return response.read()
+
+    def _execute_cmd_getobj(self, args):
+        visit_path = self._walrus_url
+        if visit_path[-1] == '/':
+            visit_path = visit_path[:-2]
+
+        if len(args) < 1:
+            return None
+        
+        if args[0][-1] == '/':
+            print "Do not suppot download a bucket yet"
+            return None
+
+        packet = DataPacket_getobj(self._verbose_level)
+
+        item = args[0]
+        if item[0] != '/':
+            visit_path += '/'
+        visit_path += item
+
+        if len(args) < 2:
+            localpath = r"./"
+        else:
+            localpath = args[1]
+
+        if localpath[-1] == '/':
+            localpath += (args[0].split("/"))[-1]
+
+        packet_headers = packet.generate_header(self._access_key,\
+                                                self._secret_key,\
+                                                urlparse.urlparse(visit_path).path)
+    
+        response = self._send_request(method   = "GET",          \
+                                  fullpath = visit_path,     \
+                                  headers  = packet_headers)
+        
+        if response.status != 200:
+            return response.read()
+        else:
+            try:
+                dst = file(localpath, "w")
+                data = response.read(1024)
+                while data != "":
+                    dst.write(data)
+                    data = response.read(1024)
+                dst.close()
+
+                return ""
+            except IOError:
+                print "fail to create the file in the local"
+                return ""
 
     def _execute_cmd_delobj(self, args):
         if len(args) != 1:
@@ -257,9 +319,11 @@ class WalrusPioneerLib:
                                                 self._secret_key,\
                                                 urlparse.urlparse(visit_path).path)
     
-        return self._send_request(method   = "DELETE",       \
+        response =  self._send_request(method   = "DELETE",       \
                                   fullpath = visit_path,     \
                                   headers  = packet_headers)
+
+        return response.read()
 
     ##### Function for sending the request #######################
     def _send_request(self, method = "", fullpath = "", headers = {}, contents = None):
@@ -296,14 +360,10 @@ class WalrusPioneerLib:
             conn.send(contents)
             contents.close()
         print "\n#########Send Data ###########\n"
+
         response = conn.getresponse()
-        feeddata = response.read()
 
-        WalrusPioneerDebug.print_verbose("####Feed back data####", \
-                                         feeddata,                 \
-                                         self._verbose_level)
-
-        return feeddata
+        return response
 
     ###### Check if all necessary information has been provided #########
     def _check_provide_access_info(self):
@@ -406,9 +466,6 @@ class DataPacket:
 
 ##################### Class DataPacket_list ##########################
 class DataPacket_list(DataPacket):
-
-    #################### Public Methods ##########################
-
     def generate_header(self                        ,\
                         access_key              = "",\
                         secret_key              = "",\
@@ -430,9 +487,6 @@ class DataPacket_list(DataPacket):
         return headers
 
 class DataPacket_mkbkt(DataPacket):
-
-    #################### Public Methods ##########################
-
     def generate_header(self                        ,\
                         access_key              = "",\
                         secret_key              = "",\
@@ -486,9 +540,6 @@ class DataPacket_delobj(DataPacket_delete):
 
 
 class DataPacket_queryacl(DataPacket):
-
-    #################### Public Methods ##########################
-
     def generate_header(self                        ,\
                         access_key              = "",\
                         secret_key              = "",\
@@ -509,9 +560,28 @@ class DataPacket_queryacl(DataPacket):
                                    )
         return headers
 
-class DataPacket_putobj(DataPacket):
+class DataPacket_getobj(DataPacket):
+    def generate_header(self                        ,\
+                        access_key              = "",\
+                        secret_key              = "",\
+                        CanonicalizedResources  = ""):
 
-    #################### Public Methods ##########################
+        headers = {}
+        headers['User-Agent'] = r"Python-urllib/2.6"
+        headers['Accept'] = r"*/*"
+        headers['Date'] = self._get_time_header()
+        headers['Authorization'] = self._get_authorization_header    \
+                                   (                                 \
+                                      access_key = access_key,       \
+                                      secret_key = secret_key,       \
+                                      HTTP_Verb  = 'GET',            \
+                                      date       = headers['Date'],  \
+                                      CanonicalizedResources =       \
+                                      CanonicalizedResources         \
+                                   )
+        return headers
+
+class DataPacket_putobj(DataPacket):
     def __init__(self, verbose_level = 0):
         DataPacket.__init__(self, verbose_level)
         self._content_length = 0
