@@ -268,6 +268,7 @@ class WalrusPioneerLib:
         
         if contents != None:
             conn.send(contents)
+            contents.close()
         print "\n#########Send Data ###########\n"
         response = conn.getresponse()
         feeddata = response.read()
@@ -518,10 +519,16 @@ class DataPacket_putobj(DataPacket):
             bodysrc.seek(0, 0)
 
             #get Content-MD5 value #
-            bodycontent = bodysrc.read()
-            self._content_md5 = base64.b64encode(md5(bodycontent).digest())
+            m = md5()
+            data = bodysrc.read(1024)
+            while data != "":
+                m.update(data)
+                data = bodysrc.read(1024)
+            self._content_md5 = base64.b64encode(m.digest())
 
-            return bodycontent
+            bodysrc.seek(0, 0)
+
+            return bodysrc
         except IOError:
             print "Fail to open the %s" % filename
             return None
