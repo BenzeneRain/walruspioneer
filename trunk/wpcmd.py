@@ -30,7 +30,7 @@ class WalrusPioneerCmd:
     '''
 
     # here need a comma to make it a real tuple
-    _command_list = ("list","mkbkt","rmbkt",)
+    _command_list = ("list","mkbkt","rmbkt","queryacl",)
 
     ################### Static Method ####################################
     @staticmethod
@@ -64,6 +64,9 @@ class WalrusPioneerCmd:
         print "  rmbkt <BucketName>     \tThe command receives one argument."
         print "                         \tIt will delete the bucket with specific"
         print "                         \tbucket name"
+        print "  queryacl <ResourceName>\tThe command receives one argument."
+        print "                         \tIt will query the access control list of"
+        print "                         \tspecific bucket or object"
         print ""
         print "Examples:"
         print " ./wpcmd.py -v 2 list \t\tList the content under the root of your account"
@@ -91,6 +94,8 @@ class WalrusPioneerCmd:
             return self._execute_mkbkt(wpl, c_args, arg_len)
         elif c_args[0] == "rmbkt":
             return self._execute_rmbkt(wpl, c_args, arg_len)
+        elif c_args[0] == "queryacl":
+            return self._execute_queryacl(wpl, c_args, arg_len)
         # elif ...
         #   return ...
         # else
@@ -185,6 +190,19 @@ class WalrusPioneerCmd:
         ret = 0
         try:
             ret = wpl.executecmd(cmd = 'rmbkt', args = [args[1]])
+        except:
+            print "Command execution failed"
+
+        return ret
+
+    def _execute_queryacl(self, wpl, args, arg_len):
+        if arg_len != 2:
+            print "Invalid command usage. Please check help info."
+            WalrusPioneerCmd.print_usage()
+            sys.exit()
+        ret = 0
+        try:
+            ret = wpl.executecmd(cmd = 'queryacl', args = [args[1]])
         except:
             print "Command execution failed"
 

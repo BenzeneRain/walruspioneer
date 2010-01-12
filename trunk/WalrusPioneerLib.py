@@ -42,6 +42,7 @@ class WalrusPioneerLib:
                  under user's root
         mkbkt --- Make a bucket with the specific name
         rmbkt --- Remove a bucket with the specific name
+        queryacl --- Query the access control list of a bucket or an object 
         Others are still underconstuction
     '''
 
@@ -97,19 +98,21 @@ class WalrusPioneerLib:
             return self._execute_cmd_mkbkt(args)
         elif cmd == 'rmbkt':
             return self._execute_cmd_rmbkt(args)
+        elif cmd == 'queryacl':
+            return self._execute_cmd_queryacl(args)
         # elif ... other commands
 
-    ################### Private #####################################
-    def _set_secret_key(self, secret_key):
+    def set_secret_key(self, secret_key):
         self._set_secret_key = secret_key;
 
-    def _set_access_key(self, access_key):
+    def set_access_key(self, access_key):
         self._set_access_key = access_key;
 
-    def _set_walrus_url(self, walrus_url):
+    def set_walrus_url(self, walrus_url):
         self._walrus_url = walrus_url;
 
 
+    ################### Private #####################################
     def _execute_cmd_list(self, args):
         visit_path = self._walrus_url
         if visit_path[-1] == '/':
@@ -176,7 +179,26 @@ class WalrusPioneerLib:
                                   fullpath = visit_path,     \
                                   headers  = packet_headers)
 
+    def _execute_cmd_queryacl(self, args):
+        visit_path = self._walrus_url
+        if visit_path[-1] == '/':
+            visit_path = visit_path[:-2]
 
+        if args != None:
+            for item in args:
+                if item[0] != '/':
+                    visit_path += '/'
+                visit_path += item
+
+        packet = DataPacket_queryacl(self._verbose_level)
+        packet_headers = packet.generate_header(self._access_key,\
+                                                self._secret_key,\
+                                                urlparse.urlparse(visit_path).path\
+                                                + "?acl")
+    
+        return self._send_request(method   = "GET",          \
+                                  fullpath = visit_path + "?acl",     \
+                                  headers  = packet_headers)
 
     ##### Function for sending the request #######################
     def _send_request(self, method = "", fullpath = "", headers = {}, contents = None):
@@ -197,7 +219,7 @@ class WalrusPioneerLib:
         conn = httplib.HTTPConnection(urldetails.netloc)
         conn.set_debuglevel(self._verbose_level)
         conn.putrequest(method,         \
-                        urldetails.path,\
+                        urldetails.path + "?" + urldetails.query,\
                         skip_accept_encoding = True)
         for header in headers:
             conn.putheader(header, headers[header])
@@ -228,7 +250,7 @@ class WalrusPioneerLib:
 
 ####################### Class DataPacket  ###############################
 class DataPacket:
-    def __init__(self, verbose_level):
+    def __init__(self, verbose_level = 0):
         self._verbose_level = verbose_level
 
     #################### Private Methods ##########################
@@ -350,6 +372,7 @@ class DataPacket_mkbkt(DataPacket):
                         CanonicalizedResources  = ""):
 
         headers = {}
+#        headers['x-amz-acl'] = r"public-read-write"
         headers['User-Agent'] = r"Python-urllib/2.6"
         headers['Accept'] = r"*/*"
         headers['Date'] = self._get_time_header()
@@ -359,6 +382,7 @@ class DataPacket_mkbkt(DataPacket):
                                       secret_key = secret_key,       \
                                       HTTP_Verb  = 'PUT',            \
                                       date       = headers['Date'],  \
+#                                      CanonicalizedAmzHeaders = "x-amz-acl:public-read-write\n", \
                                       CanonicalizedResources =       \
                                       CanonicalizedResources         \
                                    )
@@ -382,6 +406,30 @@ class DataPacket_rmbkt(DataPacket):
                                       access_key = access_key,       \
                                       secret_key = secret_key,       \
                                       HTTP_Verb  = 'DELETE',         \
+                                      date       = headers['Date'],  \
+                                      CanonicalizedResources =       \
+                                      CanonicalizedResources         \
+                                   )
+        return headers
+
+class DataPacket_queryacl(DataPacket):
+
+    #################### Public Methods ##########################
+
+    def generate_header(self                        ,\
+                        access_key              = "",\
+                        secret_key              = "",\
+                        CanonicalizedResources  = ""):
+
+        headers = {}
+        headers['User-Agent'] = r"Python-urllib/2.6"
+        headers['Accept'] = r"*/*"
+        headers['Date'] = self._get_time_header()
+        headers['Authorization'] = self._get_authorization_header    \
+                                   (                                 \
+                                      access_key = access_key,       \
+                                      secret_key = secret_key,       \
+                                      HTTP_Verb  = 'GET',         \
                                       date       = headers['Date'],  \
                                       CanonicalizedResources =       \
                                       CanonicalizedResources         \
