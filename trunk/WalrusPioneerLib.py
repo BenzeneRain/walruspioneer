@@ -45,6 +45,7 @@ class WalrusPioneerLib:
         rmbkt --- Remove a bucket with the specific name
         queryacl --- Query the access control list of a bucket or an object 
         putobj --- put an object to the walrus
+        delobj --- delete an existed object in the walrus
         Others are still underconstuction
     '''
 
@@ -104,6 +105,8 @@ class WalrusPioneerLib:
             return self._execute_cmd_queryacl(args)
         elif cmd == 'putobj':
             return self._execute_cmd_putobj(args)
+        elif cmd == 'delobj':
+            return self._execute_cmd_delobj(args)
         # elif ... other commands
 
     def set_secret_key(self, secret_key):
@@ -234,6 +237,29 @@ class WalrusPioneerLib:
                                   fullpath = visit_path,     \
                                   headers  = packet_headers, \
                                   contents = packet_content)
+
+    def _execute_cmd_delobj(self, args):
+        if len(args) != 1:
+            print "Invalid argument for delobj command!"
+            return None
+
+        visit_path = self._walrus_url
+        if visit_path[-1] == '/':
+            visit_path = visit_path[:-2]
+
+        for item in args:
+            if item[0] != '/':
+                visit_path += '/'
+            visit_path += item
+
+        packet = DataPacket_delobj(self._verbose_level)
+        packet_headers = packet.generate_header(self._access_key,\
+                                                self._secret_key,\
+                                                urlparse.urlparse(visit_path).path)
+    
+        return self._send_request(method   = "DELETE",       \
+                                  fullpath = visit_path,     \
+                                  headers  = packet_headers)
 
     ##### Function for sending the request #######################
     def _send_request(self, method = "", fullpath = "", headers = {}, contents = None):
@@ -429,9 +455,7 @@ class DataPacket_mkbkt(DataPacket):
                                    )
         return headers
 
-class DataPacket_rmbkt(DataPacket):
-
-    #################### Public Methods ##########################
+class DataPacket_delete(DataPacket):
 
     def generate_header(self                        ,\
                         access_key              = "",\
@@ -452,6 +476,14 @@ class DataPacket_rmbkt(DataPacket):
                                       CanonicalizedResources         \
                                    )
         return headers
+
+class DataPacket_rmbkt(DataPacket_delete):
+    pass
+
+
+class DataPacket_delobj(DataPacket_delete):
+    pass
+
 
 class DataPacket_queryacl(DataPacket):
 
