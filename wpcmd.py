@@ -30,7 +30,7 @@ class WalrusPioneerCmd:
     '''
 
     # here need a comma to make it a real tuple
-    _command_list = ("list","mkbkt","rmbkt","queryacl",)
+    _command_list = ("list","mkbkt","rmbkt","queryacl","putobj",)
 
     ################### Static Method ####################################
     @staticmethod
@@ -67,6 +67,13 @@ class WalrusPioneerCmd:
         print "  queryacl <ResourceName>\tThe command receives one argument."
         print "                         \tIt will query the access control list of"
         print "                         \tspecific bucket or object"
+        print "  putobj <src> <dst>     \tThe command receives two arguments."
+        print "                         \tIt will upload the file specified by src"
+        print "                         \tto the destination notified by dst. Note"
+        print "                         \tthat use need to specify the name in the"
+        print "                         \tremote server. If dst is a bucket name  "
+        print "                         \tending with a /, then the name of uploaded"
+        print "                         \twill keep the same as the original one."
         print ""
         print "Examples:"
         print " ./wpcmd.py -v 2 list \t\tList the content under the root of your account"
@@ -96,6 +103,8 @@ class WalrusPioneerCmd:
             return self._execute_rmbkt(wpl, c_args, arg_len)
         elif c_args[0] == "queryacl":
             return self._execute_queryacl(wpl, c_args, arg_len)
+        elif c_args[0] == "putobj":
+            return self._execute_putobj(wpl, c_args, arg_len)
         # elif ...
         #   return ...
         # else
@@ -203,6 +212,19 @@ class WalrusPioneerCmd:
         ret = 0
         try:
             ret = wpl.executecmd(cmd = 'queryacl', args = [args[1]])
+        except:
+            print "Command execution failed"
+
+        return ret
+
+    def _execute_putobj(self, wpl, args, arg_len):
+        if arg_len != 3:
+            print "Invalid command usage. Please check help info."
+            WalrusPioneerCmd.print_usage()
+            sys.exit()
+        ret = 0
+        try:
+            ret = wpl.executecmd(cmd = 'putobj', args = args[1:])
         except:
             print "Command execution failed"
 
