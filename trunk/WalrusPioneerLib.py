@@ -30,6 +30,7 @@ import datetime
 import hmac
 import base64
 from hashlib import sha1
+from hashlib import md5
 
 ####################### Class WalrusPioneerLib ###############################
 class WalrusPioneerLib:
@@ -43,6 +44,7 @@ class WalrusPioneerLib:
         mkbkt --- Make a bucket with the specific name
         rmbkt --- Remove a bucket with the specific name
         queryacl --- Query the access control list of a bucket or an object 
+        putobj --- put an object to the walrus
         Others are still underconstuction
     '''
 
@@ -100,6 +102,8 @@ class WalrusPioneerLib:
             return self._execute_cmd_rmbkt(args)
         elif cmd == 'queryacl':
             return self._execute_cmd_queryacl(args)
+        elif cmd == 'putobj':
+            return self._execute_cmd_putobj(args)
         # elif ... other commands
 
     def set_secret_key(self, secret_key):
@@ -200,6 +204,37 @@ class WalrusPioneerLib:
                                   fullpath = visit_path + "?acl",     \
                                   headers  = packet_headers)
 
+    def _execute_cmd_putobj(self, args):
+        visit_path = self._walrus_url
+        if visit_path[-1] == '/':
+            visit_path = visit_path[:-2]
+
+        if len(args) != 2:
+            return None
+        
+#        if args[0][-1] == '/':
+#            print "Do not suppot upload a directory yet"
+#            return None
+
+        packet = DataPacket_putobj(self._verbose_level)
+        packet_content = packet.generate_body(args[0])
+
+        item = args[1]
+        if item[0] != '/':
+            visit_path += '/'
+        if item[-1] == '/':
+            item += (args[0].split("/"))[-1]
+        visit_path += item
+
+        packet_headers = packet.generate_header(self._access_key,\
+                                                self._secret_key,\
+                                                urlparse.urlparse(visit_path).path)
+    
+        return self._send_request(method   = "PUT",          \
+                                  fullpath = visit_path,     \
+                                  headers  = packet_headers, \
+                                  contents = packet_content)
+
     ##### Function for sending the request #######################
     def _send_request(self, method = "", fullpath = "", headers = {}, contents = None):
 
@@ -218,8 +253,13 @@ class WalrusPioneerLib:
         urldetails = urlparse.urlparse(fullpath)
         conn = httplib.HTTPConnection(urldetails.netloc)
         conn.set_debuglevel(self._verbose_level)
+
+        resource = urldetails.path
+        if urldetails.query != "":
+            resource += "?" + urldetails.query
+
         conn.putrequest(method,         \
-                        urldetails.path + "?" + urldetails.query,\
+                        resource,\
                         skip_accept_encoding = True)
         for header in headers:
             conn.putheader(header, headers[header])
@@ -228,7 +268,7 @@ class WalrusPioneerLib:
         
         if contents != None:
             conn.send(contents)
-
+        print "\n#########Send Data ###########\n"
         response = conn.getresponse()
         feeddata = response.read()
 
@@ -435,6 +475,57 @@ class DataPacket_queryacl(DataPacket):
                                       CanonicalizedResources         \
                                    )
         return headers
+
+class DataPacket_putobj(DataPacket):
+
+    #################### Public Methods ##########################
+    def __init__(self, verbose_level = 0):
+        DataPacket.__init__(self, verbose_level)
+        self._content_length = 0
+        self._content_md5 = ""
+
+    def generate_header(self                        ,\
+                        access_key              = "",\
+                        secret_key              = "",\
+                        CanonicalizedResources  = ""):
+
+        headers = {}
+        headers['User-Agent'] = r"Python-urllib/2.6"
+        headers['Accept'] = r"*/*"
+        headers['Date'] = self._get_time_header()
+        headers['Content-Length'] = self._content_length
+        headers['Content-MD5'] = self._content_md5
+        headers['Expect'] = "100-continue"
+        headers['Authorization'] = self._get_authorization_header    \
+                                   (                                 \
+                                      access_key = access_key,       \
+                                      secret_key = secret_key,       \
+                                      HTTP_Verb  = 'PUT',            \
+                                      Content_MD5 = self._content_md5,\
+                                      date       = headers['Date'],  \
+                                      CanonicalizedResources =       \
+                                      CanonicalizedResources         \
+                                   )
+        return headers
+    
+    def generate_body(self, filename):
+        try:
+            bodysrc = file(filename)
+            
+            #get Content-Length #
+            bodysrc.seek(0, 2)
+            self._content_length = bodysrc.tell()
+            bodysrc.seek(0, 0)
+
+            #get Content-MD5 value #
+            bodycontent = bodysrc.read()
+            self._content_md5 = base64.b64encode(md5(bodycontent).digest())
+
+            return bodycontent
+        except IOError:
+            print "Fail to open the %s" % filename
+            return None
+
 
 ##################### Class WalrusPioneerDebug #######################
 class WalrusPioneerDebug:
