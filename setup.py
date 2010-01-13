@@ -10,5 +10,6 @@ setup(
     url = 'http://code.google.com/p/walruspioneer',
     platforms = 'cross plarform',
 
-    packages = ['walruspioneer']
+    packages = ['WalrusPioneer'],
+    scripts = ['WalrusPioneer/wpcmd.py']
 )
