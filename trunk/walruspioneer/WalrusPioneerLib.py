@@ -230,6 +230,9 @@ class WalrusPioneerLib:
 
         packet = DataPacket_putobj(self._verbose_level)
         packet_content = packet.generate_body(args[0])
+        if packet_content == None:
+            print "Cannot open the file"
+            return ""
 
         item = args[1]
         if item[0] != '/':
