@@ -22,7 +22,7 @@
 import sys
 import getopt
 
-from WalrusPioneerLib import WalrusPioneerLib
+from WalrusPioneer.WalrusPioneerLib import WalrusPioneerLib
 
 class WalrusPioneerCmd:
     '''
