@@ -21,7 +21,6 @@
 
 import os
 
-#import urllib2
 import httplib
 import urlparse
 
@@ -223,10 +222,6 @@ class WalrusPioneerLib:
 
         if len(args) != 2:
             return None
-        
-#        if args[0][-1] == '/':
-#            print "Do not suppot upload a directory yet"
-#            return None
 
         packet = DataPacket_putobj(self._verbose_level)
         packet_content = packet.generate_body(args[0])
@@ -496,7 +491,7 @@ class DataPacket_mkbkt(DataPacket):
                         CanonicalizedResources  = ""):
 
         headers = {}
-#        headers['x-amz-acl'] = r"public-read-write"
+        #headers['x-amz-acl'] = r"public-read-write"
         headers['User-Agent'] = r"Python-urllib/2.6"
         headers['Accept'] = r"*/*"
         headers['Date'] = self._get_time_header()
@@ -506,7 +501,7 @@ class DataPacket_mkbkt(DataPacket):
                                       secret_key = secret_key,       \
                                       HTTP_Verb  = 'PUT',            \
                                       date       = headers['Date'],  \
-#                                      CanonicalizedAmzHeaders = "x-amz-acl:public-read-write\n", \
+                                      #CanonicalizedAmzHeaders = "x-amz-acl:public-read-write\n", \
                                       CanonicalizedResources =       \
                                       CanonicalizedResources         \
                                    )
